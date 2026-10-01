@@ -20,29 +20,19 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Prepare web files (www)
+      - name: Check www
         run: |
-          HTML=$(find . -iname "index.html" -not -path "./node_modules/*" -not -path "./www/*" | head -n 1)
-          if [ -z "$HTML" ]; then
-            echo "ERROR: index.html haipatikani"
-            ls -R | grep -v node_modules | head -50
-            exit 1
-          fi
-          echo "Found: $HTML"
-          mkdir -p www
-          cp -r "$(dirname "$HTML")"/. www/
-          rm -rf www/.git www/.github www/scripts www/node_modules
+          test -f www/index.html || { echo "ERROR: www/index.html haipo"; exit 1; }
+          ls -R www
 
       - name: Install dependencies
         run: |
           [ -f package.json ] || npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android pdfjs-dist@3.11.174
-
-      - name: Copy pdf.js (offline)
-        run: node scripts/prepare-www.js
+          npm install @capacitor/core @capacitor/cli @capacitor/android
 
       - name: Init Capacitor and add Android
         run: |
+          rm -rf android capacitor.config.json capacitor.config.ts
           npx cap init "Corevia" "com.corevia.app" --web-dir=www
           npx cap add android
 
