@@ -1,0 +1,54 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Prepare web files (www)
+        run: |
+          mkdir -p www
+          cp index.html www/
+          cp pdf.min.js www/ 2>/dev/null || echo "pdf.min.js haipo"
+          cp pdf.worker.min.js www/ 2>/dev/null || true
+          for f in manifest.json sw.js; do [ -f "$f" ] && cp "$f" www/; done
+          for d in assets icons images css js; do [ -d "$d" ] && cp -r "$d" www/; done
+          true
+
+      - name: Install Capacitor
+        run: |
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Init Capacitor and add Android
+        run: |
+          npx cap init "Corevia" "com.corevia.app" --web-dir=www
+          npx cap add android
+          npx cap sync android
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: corevia-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
