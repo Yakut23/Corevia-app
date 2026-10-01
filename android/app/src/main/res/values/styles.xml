@@ -1,0 +1,2 @@
+<item name="android:windowFullscreen">true</item>
+<item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
